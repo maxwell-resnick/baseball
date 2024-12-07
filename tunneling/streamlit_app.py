@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.patches import Ellipse
 import seaborn as sns
+import gdown
 
 st.set_page_config(layout="wide")
 
@@ -15,7 +16,10 @@ pitch_color_mapping = {
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("tunnel_data.csv")
+    url = "https://drive.google.com/uc?id=1U8wPV1QrhVTv0uebehMMFKHQTROFaXs1"
+    output = "tunnel_data.csv"
+    gdown.download(url, output, quiet=False)
+    return pd.read_csv(output)
 
 def main():
     st.markdown("""
