@@ -108,6 +108,17 @@ def main():
             right_html = create_tunneling_table(filtered_df[filtered_df['stand'] == 'R'])
             st.markdown(f'<div class="center-table">{right_html}</div>', unsafe_allow_html=True)
 
+            st.markdown("""
+            <div style="font-size:22px; margin-top:40px; line-height:1.8;">
+                <strong>Glossary:</strong><br>
+                - <strong>Tunnel Boost:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects in all three dimensions.<br>
+                - <strong>X Tunnel:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects on the <em>x</em> plane.<br>
+                - <strong>Y Tunnel:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects on the <em>y</em> plane.<br>
+                - <strong>Z Tunnel:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects on the <em>z</em> plane.<br>
+                - <strong>Shape Tunnel:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects on the <em>x</em> and <em>z</em> planes, ignoring the <em>y</em> plane.
+            </div>
+    """, unsafe_allow_html=True)
+
     with tab2:
         st.markdown(f"""
             <div style="text-align: center;">
