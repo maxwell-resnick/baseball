@@ -109,7 +109,7 @@ def main():
             st.markdown(f'<div class="center-table">{right_html}</div>', unsafe_allow_html=True)
 
             st.markdown("""
-            <div style="font-size:22px; margin-top:40px; line-height:1.8;">
+            <div style="font-size:18px; margin-top:40px; line-height:1.8;">
                 <strong>Glossary:</strong><br>
                 - <strong>Tunnel Boost:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects in all three dimensions.<br>
                 - <strong>X Tunnel:</strong> The pitch's xRV/100 increase when factoring in arsenal interaction effects on the <em>x</em> plane.<br>
