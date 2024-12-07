@@ -136,6 +136,12 @@ def main():
             </style>
         """, unsafe_allow_html=True)
 
+        st.markdown("""
+            <div style="font-size:20px; font-weight:normal; margin-bottom:20px; line-height:1.5; text-align: center;">
+                <em>These plots aim to demonstrate the similarity between a pitch's angles out of the hand and at the plate compared to the rest of the arsenal</em>
+            </div>
+        """, unsafe_allow_html=True)
+
         col1, col2 = st.columns(2)
 
         with col1:
@@ -203,6 +209,12 @@ def main():
         st.markdown(f"""
             <div style="text-align: center;">
                 <h1 style="font-size:30px;">Tunneling Plots for {first_last_name}</h1>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+            <div style="font-size:20px; font-weight:normal; margin-bottom:20px; line-height:1.5; text-align: center;">
+                <em>These plots illustrate the "tunnel" each pitch takes out of the hand compared to their separation at the plate</em>
             </div>
         """, unsafe_allow_html=True)
 
@@ -290,7 +302,7 @@ def main():
             I am a fourth-year undergraduate at the University of Chicago studying Data Science and Economics, who has previously worked in the front offices of 
             the Seattle Mariners and the Philadelphia Phillies. At UChicago, I work as an Assistant Coach of the baseball team, with a focus on analytics.
             I have always found the phenomenon of pitch tunneling to be fascinating. Many deem it one of baseball's unquantifiable artistic elements, but 
-            I believe that it can be turned into a science. If you like my work, please check out my X account, as I post plenty of baseball analytics content on it.
+            I believe that it can be viewed as a science as well. If you like my work, please check out my X account; I post plenty of baseball analytics content on it.
             My goal is to grow baseball analytics in the public space, so if you have any questions or would like to chat about any particular methodology decisions
             I made, please don't hesitate to reach out on social media!
             <br><br>
