@@ -1,18 +1,11 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap, Normalize
-from matplotlib.patches import Ellipse
 import seaborn as sns
 import gdown
+from tunnel_helper_functions import create_tunneling_table, plot_pitcher_metrics
 
 st.set_page_config(layout="wide")
-
-pitch_color_mapping = {
-    'FF': 'red', 'SL': 'orange', 'SI': 'pink', 'CH': 'purple', 'FC': 'blue',
-    'CU': 'lightgreen', 'ST': 'brown', 'FS': 'black', 'KC': 'darkgreen',
-    'SV': 'yellow', 'FO': 'yellow', 'KN': 'yellow', 'SC': 'yellow'
-}
 
 @st.cache_data
 def load_data():
@@ -25,9 +18,12 @@ def main():
     st.markdown("""
         <div style="text-align: left;">
             <h1>Pitch Tunneling</h1>
-            <h3 style="color: gray; font-size: 18px;">
-                A Web App To Evaluate and Analyze Arsenal Interaction Effects
+            <h3 style="color: gray; font-size: 22px;">
+                A Quantitative Way To Evaluate and Analyze Arsenal Interaction Effects
             </h3>
+            <h4 style="color: gray; font-size: 16px;">
+                By Maxwell Resnick
+            </h4>
         </div>
     """, unsafe_allow_html=True)
     data = load_data()
@@ -66,7 +62,8 @@ def main():
 
     player_df = player_df[player_df['game_year'] == selected_year]
 
-    tab1, tab2, tab3 = st.tabs(["Tunneling Metrics", "Kernel Density Plots", "Tunnel Ellipses Plots"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Tunneling Metrics", "Kernel Density Plots", "Tunnel Ellipses Plots", 
+                                      "Research & Methodology", "About Me"])
 
     with tab1:
         st.markdown(f"""
@@ -77,54 +74,12 @@ def main():
         
         st.markdown("""
             <div style="font-size:20px; font-weight:normal; margin-bottom:20px; line-height:1.5; text-align: center;">
-                The values below answer the question:<br>
+                The values below answer the question:<br><br>
                 <em>How much does the pitch's xRV/100 increase when factoring in arsenal interaction effects?</em>
             </div>
         """, unsafe_allow_html=True)
 
         filtered_df = player_df[player_df['player_name'] == selected_player]
-
-        def create_tunneling_table(data):
-            data['Usage%'] = data.groupby('pitch_type')['pitch_type'].transform('count') / len(data) * 100
-
-            grouped_metrics = data.groupby('pitch_type')[['Usage%', 'tunnel_boost', 'x_tunnel', 'y_tunnel',
-                                                        'z_tunnel', 'shape_tunnel']].mean().reset_index()
-
-            grouped_metrics = grouped_metrics.sort_values(by='Usage%', ascending=False)
-
-            grouped_metrics = grouped_metrics.rename(columns={
-                'pitch_type': 'Pitch Type',
-                'tunnel_boost': 'Tunnel Boost',
-                'x_tunnel': 'X Tunnel',
-                'y_tunnel': 'Y Tunnel',
-                'z_tunnel': 'Z Tunnel',
-                'shape_tunnel': 'Shape Tunnel'
-            })
-
-            grouped_metrics = grouped_metrics.round({'Tunnel Boost': 2, 'X Tunnel': 2, 'Y Tunnel': 2, 
-                                                    'Z Tunnel': 2, 'Shape Tunnel': 2, 'Usage%': 1})
-
-            cmap = LinearSegmentedColormap.from_list("custom_gradient", ["blue", "white", "red"])
-
-            def apply_gradient(s, vmin, vmax):
-                norm = Normalize(vmin=vmin, vmax=vmax)  
-                colors = [cmap(norm(val)) for val in s] 
-                return [f"background-color: rgba({int(c[0]*255)}, {int(c[1]*255)}, {int(c[2]*255)}, 1)" for c in colors]
-
-            styled_metrics = grouped_metrics.style.apply(
-                lambda s: apply_gradient(s, vmin=-1.5, vmax=1.5), subset=['Tunnel Boost', 'Y Tunnel']
-            ).apply(
-                lambda s: apply_gradient(s, vmin=-0.5, vmax=0.5), subset=['X Tunnel', 'Z Tunnel', 'Shape Tunnel']
-            ).format(
-                {"Tunnel Boost": "{:.2f}", "X Tunnel": "{:.2f}", "Y Tunnel": "{:.2f}", 
-                "Z Tunnel": "{:.2f}", "Shape Tunnel": "{:.2f}", "Usage%": "{:.1f}"}
-            ).set_table_styles([
-                {"selector": "thead th", "props": [("font-size", "22px"), ("text-align", "center"), ("color", "black")]},
-                {"selector": "tbody td", "props": [("font-size", "20px"), ("text-align", "center"), ("color", "black")]}
-            ]).hide(axis="index")
-
-            html_output = styled_metrics.to_html()
-            return html_output
 
         if filtered_df.empty:
             st.warning(f"No data available for {selected_player} in {selected_year}.")
@@ -201,9 +156,11 @@ def main():
         """, unsafe_allow_html=True)
 
         if stand != 'All':
-            player_df = player_df[player_df['stand'] == stand]
+            subset_df = player_df[player_df['stand'] == stand]
+        else:
+            subset_df = player_df.copy()
 
-        player_df = player_df.dropna(subset=['VRA', 'HRA', 'VAA', 'HAA'])
+        subset_df = subset_df.dropna(subset=['VRA', 'HRA', 'VAA', 'HAA'])
 
         fig, axes = plt.subplots(2, 2, figsize=(16, 8), sharey=True)
 
@@ -211,28 +168,28 @@ def main():
 
         tick_size = 12
 
-        sns.kdeplot(player_df[player_df['pitch_type'] == pitch]['VRA'], color='blue', label=pitch, lw=2, ax=axes[0, 0])
-        sns.kdeplot(player_df[player_df['pitch_type'] != pitch]['VRA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[0, 0])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] == pitch]['VRA'], color='blue', label=pitch, lw=2, ax=axes[0, 0])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] != pitch]['VRA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[0, 0])
         axes[0, 0].set_title('Vertical Release Angle', fontsize=18)
         axes[0, 0].set_xlabel('')
         axes[0, 0].set_ylabel('Density', fontsize=16)
         axes[0, 0].tick_params(axis='both', labelsize=tick_size)
 
-        sns.kdeplot(player_df[player_df['pitch_type'] == pitch]['HRA'], color='blue', label=pitch, lw=2, ax=axes[0, 1])
-        sns.kdeplot(player_df[player_df['pitch_type'] != pitch]['HRA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[0, 1])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] == pitch]['HRA'], color='blue', label=pitch, lw=2, ax=axes[0, 1])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] != pitch]['HRA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[0, 1])
         axes[0, 1].set_title('Horizontal Release Angle', fontsize=18)
         axes[0, 1].set_xlabel('')
         axes[0, 1].tick_params(axis='both', labelsize=tick_size)
 
-        sns.kdeplot(player_df[player_df['pitch_type'] == pitch]['VAA'], color='blue', label=pitch, lw=2, ax=axes[1, 0])
-        sns.kdeplot(player_df[player_df['pitch_type'] != pitch]['VAA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[1, 0])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] == pitch]['VAA'], color='blue', label=pitch, lw=2, ax=axes[1, 0])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] != pitch]['VAA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[1, 0])
         axes[1, 0].set_title('Vertical Approach Angle', fontsize=18)
         axes[1, 0].set_xlabel('')
         axes[1, 0].set_ylabel('Density', fontsize=16)
         axes[1, 0].tick_params(axis='both', labelsize=tick_size)
 
-        sns.kdeplot(player_df[player_df['pitch_type'] == pitch]['HAA'], color='blue', label=pitch, lw=2, ax=axes[1, 1])
-        sns.kdeplot(player_df[player_df['pitch_type'] != pitch]['HAA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[1, 1])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] == pitch]['HAA'], color='blue', label=pitch, lw=2, ax=axes[1, 1])
+        sns.kdeplot(subset_df[subset_df['pitch_type'] != pitch]['HAA'], color='red', label="Rest of Arsenal", lw=2, ax=axes[1, 1])
         axes[1, 1].set_title('Horizontal Approach Angle', fontsize=18)
         axes[1, 1].set_xlabel('')
         axes[1, 1].tick_params(axis='both', labelsize=tick_size)
@@ -248,52 +205,6 @@ def main():
                 <h1 style="font-size:30px;">Tunneling Plots for {first_last_name}</h1>
             </div>
         """, unsafe_allow_html=True)
-        def plot_pitcher_metrics(player_name, player_df, fig, axs, x_metric, y_metric, x_label, y_label):
-            for stand, ax in zip(['L', 'R'], axs):
-                stand_df = player_df[player_df['stand'] == stand]
-
-                stand_df = stand_df.dropna(subset=[x_metric, y_metric])
-
-                pitch_type_counts = stand_df['pitch_type'].value_counts(normalize=True)
-
-                valid_pitch_types = pitch_type_counts[pitch_type_counts >= 0.02].index
-
-                filtered_df = stand_df[stand_df['pitch_type'].isin(valid_pitch_types)]
-
-                grouped = filtered_df.groupby('pitch_type').agg(
-                    mean_x=(x_metric, 'mean'),
-                    mean_y=(y_metric, 'mean'),
-                    std_x=(x_metric, 'std'),
-                    std_y=(y_metric, 'std')
-                ).reset_index()
-
-                for _, row in grouped.iterrows():
-                    pitch_color = pitch_color_mapping.get(row['pitch_type'])
-                    if pitch_color:  
-                        ax.scatter(row['mean_x'], row['mean_y'], 
-                                edgecolor=pitch_color, facecolor='white', lw=2, s=100, label=row['pitch_type'])
-                        
-                        ellipse = Ellipse((row['mean_x'], row['mean_y']),
-                                        width=2 * row['std_x'], height=2 * row['std_y'],
-                                        edgecolor=pitch_color, facecolor='none', lw=2, linestyle='--')
-                        ax.add_patch(ellipse)
-
-                handles, labels = ax.get_legend_handles_labels()
-                sorted_handles_labels = sorted(
-                    zip(handles, labels), key=lambda x: pitch_type_counts.get(x[1], 0), reverse=True
-                )
-                sorted_handles, sorted_labels = zip(*sorted_handles_labels) if sorted_handles_labels else ([], [])
-                ax.legend(sorted_handles, sorted_labels, title='Pitch Type', loc='upper right', fontsize=14, title_fontsize=16)
-
-                ax.set_title(f"vs. {stand}HH", fontsize=20)
-                ax.set_xlabel(x_label, fontsize=16)
-                ax.set_ylabel(y_label if stand == 'L' else '', fontsize=16)
-
-                ax.tick_params(axis='both', which='major', labelsize=16)
-                x_min, x_max = ax.get_xlim()
-                y_min, y_max = ax.get_ylim()
-                ax.set_xticks(range(int(x_min), int(x_max) + 1))
-                ax.set_yticks(range(int(y_min), int(y_max) + 1))
 
         st.markdown("""
             <h3 style="text-align: center;">Tunnels at Release (1 StDev Ellipses)</h3>
@@ -320,6 +231,87 @@ def main():
             y_label='Vertical Approach Angle',
         )
         st.pyplot(fig2)
+    
+    with tab4:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <h1 style="font-size:30px;">Research & Methodology</h1>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="font-size: 18px; line-height: 1.6;">
+            Learn more about the methodology behind quantifying pitch tunneling by reading the article below:
+            <br><br>
+            <a href="https://medium.com/@maxwellresnick/quantifying-pitch-tunneling-acc0cfcdff02" 
+            style="font-weight: bold; font-size: 18px; color: #0366d6; text-decoration: none;">
+                The Science of Pitch Tunneling: Quantifying Arsenal Interaction Effects through Kernel Density Estimation, 
+                XGBoost, and SHAP
+            </a>
+            <br><br>
+            Here are some of my tweets from the research process:
+            <ul>
+                <li><a href="https://x.com/MaxwellResnick/status/1861500450274431044" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Quantifying Pitch Tunneling Thread
+                </a></li>
+                <li><a href="https://x.com/MaxwellResnick/status/1862652688816595067" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Joe Ryan vs. Spencer Arrighetti
+                </a></li>
+                <li><a href="https://x.com/MaxwellResnick/status/1864374760936759301" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Do Sweepers Tunnel?
+                </a></li>
+                <li><a href="https://x.com/MaxwellResnick/status/1862209303861473322" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Does Effectively Wild Exist?
+                </a></li>
+                <li><a href="https://x.com/MaxwellResnick/status/1864414376775831860" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Felix Bautista's Otherworldly Splitter
+                </a></li>
+                <li><a href="https://x.com/MaxwellResnick/status/1861113179843019107" 
+                    style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                    Logan Webb's Sneaky Four-Seamer
+                </a></li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with tab5:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <h1 style="font-size:30px;">About Me</h1>
+            </div>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style="font-size: 18px; line-height: 1.6;">
+            I am a fourth-year undergraduate at the University of Chicago studying Data Science and Economics, who has previously worked in the front offices of 
+            the Seattle Mariners and the Philadelphia Phillies. At UChicago, I work as an Assistant Coach of the baseball team, with a focus on analytics.
+            I have always found the phenomenon of pitch tunneling to be fascinating. Many deem it one of baseball's unquantifiable artistic elements, but 
+            I believe that it can be turned into a science. If you like my work, please check out my X account, as I post plenty of baseball analytics content on it.
+            My goal is to grow baseball analytics in the public space, so if you have any questions or would like to chat about any particular methodology decisions
+            I made, please don't hesitate to reach out on social media!
+            <br><br>
+        </div>
+        <div style="text-align: center;">
+            <div style="display: inline-flex; gap: 20px;">
+                <a href="https://x.com/MaxwellResnick" 
+                style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                X
+                </a>
+                <a href="https://www.linkedin.com/in/maxwell-resnick/" 
+                style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                LinkedIn
+                </a>
+                <a href="https://github.com/maxwell-resnick/baseball/tree/master" 
+                style="font-size: 18px; color: #0366d6; text-decoration: none;">
+                GitHub
+                </a>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
